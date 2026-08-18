@@ -1,7 +1,9 @@
 package com.screentime.core;
-import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TrackingEngine {
-    private LocalDate currentTrackingDate = LocalDate.now();
-    public LocalDate getCurrentTrackingDate() { return currentTrackingDate; }
+    private final AtomicBoolean paused = new AtomicBoolean(false);
+    public void pause() { paused.set(true); }
+    public void resume() { paused.set(false); }
+    public boolean isPaused() { return paused.get(); }
 }
