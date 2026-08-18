@@ -1,4 +1,4 @@
 package com.screentime.ui;
 public class MainViewController {
-    public void refreshTodayView() {}
+    public void loadHistoryData(int d) {}
 }
