@@ -12,5 +12,9 @@ class TrackingEngineTest {
     @BeforeEach void setUp(@TempDir Path tempDir) {
         engine = new TrackingEngine(() -> new WindowInfo("Test", "T", 1), new IdleDetector(), new UsageDao(new DatabaseManager(tempDir.resolve("e.db"))), 1, 5);
     }
-    @Test void testInstantiate() { assertNotNull(engine); }
+    @Test void testActiveTracking() {
+        engine.start();
+        engine.poll();
+        assertEquals(ActivityState.ACTIVE, engine.getCurrentState());
+    }
 }
