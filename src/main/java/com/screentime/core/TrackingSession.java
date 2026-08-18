@@ -1,4 +1,5 @@
 package com.screentime.core;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -18,4 +19,8 @@ public class TrackingSession {
     public LocalDateTime getEndTime() { return endTime; }
     public boolean isIdle() { return idle; }
     public LocalDate getDate() { return startTime.toLocalDate(); }
+    public long getDurationSeconds() {
+        if (startTime == null || endTime == null) return 0L;
+        return Math.max(0, Duration.between(startTime, endTime).getSeconds());
+    }
 }
