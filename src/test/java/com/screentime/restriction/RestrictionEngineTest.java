@@ -6,12 +6,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RestrictionEngineTest {
     private RestrictionEngine engine;
     @BeforeEach void setUp(@TempDir Path tempDir) {
-        engine = new RestrictionEngine(new RestrictionConfig(), new UsageDao(new DatabaseManager(tempDir.resolve("r.db"))), NotificationService.getInstance());
+        RestrictionConfig c = new RestrictionConfig();
+        c.setDailyLimitMinutes(120);
+        c.setWarningThresholds(List.of(50, 75, 90, 100));
+        engine = new RestrictionEngine(c, new UsageDao(new DatabaseManager(tempDir.resolve("r.db"))), NotificationService.getInstance());
     }
-    @Test void testInstantiate() { assertNotNull(engine); }
+    @Test void testWarningThresholdsTriggeredOnce() {
+        engine.onTick(3600, 0);
+        assertTrue(engine.getTriggeredThresholdsToday().contains(50));
+    }
 }
