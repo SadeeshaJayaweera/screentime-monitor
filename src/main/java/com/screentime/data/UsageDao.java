@@ -118,4 +118,13 @@ public class UsageDao {
         } catch (SQLException ignored) {}
         return new ExtensionStats(0, 0);
     }
+
+    public synchronized void savePeriodicDailyActiveSnapshot(java.time.LocalDate date, long totalActiveSeconds) {
+        String upsertSql = "INSERT INTO daily_usage (date, total_active_seconds, total_idle_seconds) VALUES (?, ?, 0) ON CONFLICT(date) DO UPDATE SET total_active_seconds = excluded.total_active_seconds;";
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(upsertSql)) {
+            pstmt.setString(1, date.toString());
+            pstmt.setLong(2, totalActiveSeconds);
+            pstmt.executeUpdate();
+        } catch (SQLException ignored) {}
+    }
 }
