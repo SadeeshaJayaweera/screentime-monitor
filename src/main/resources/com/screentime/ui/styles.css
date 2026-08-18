@@ -308,3 +308,43 @@
     -fx-background-color: #334155;
     -fx-text-fill: #f8fafc;
 }
+
+/* --- Form Input Fields --- */
+.text-field, .password-field {
+    -fx-background-color: #131d31;
+    -fx-text-fill: #f8fafc;
+    -fx-font-size: 13px;
+    -fx-padding: 9px 14px;
+    -fx-background-radius: 8px;
+    -fx-border-color: #27354a;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+}
+
+.text-field:focused, .password-field:focused {
+    -fx-border-color: #38bdf8;
+    -fx-background-color: #172338;
+    -fx-effect: dropshadow(gaussian, rgba(56, 189, 248, 0.25), 8, 0, 0, 0);
+}
+
+.check-box {
+    -fx-text-fill: #cbd5e1;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.check-box .box {
+    -fx-background-color: #1e293b;
+    -fx-border-color: #475569;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #0284c7;
+    -fx-border-color: #38bdf8;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #ffffff;
+}
