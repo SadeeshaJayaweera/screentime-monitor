@@ -279,3 +279,32 @@
 .btn-danger:hover {
     -fx-background-color: linear-gradient(to bottom, #fb7185, #9f1239);
 }
+
+/* Filter Capsule Buttons */
+.btn-filter-active {
+    -fx-background-color: linear-gradient(to bottom, #38bdf8, #0284c7);
+    -fx-text-fill: #0b0f19;
+    -fx-font-weight: 800;
+    -fx-font-size: 12px;
+    -fx-padding: 6px 16px;
+    -fx-background-radius: 20px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(56, 189, 248, 0.3), 6, 0, 0, 2);
+}
+
+.btn-filter-inactive {
+    -fx-background-color: #1e293b;
+    -fx-text-fill: #94a3b8;
+    -fx-font-weight: 600;
+    -fx-font-size: 12px;
+    -fx-padding: 6px 16px;
+    -fx-background-radius: 20px;
+    -fx-cursor: hand;
+    -fx-border-color: #334155;
+    -fx-border-radius: 20px;
+}
+
+.btn-filter-inactive:hover {
+    -fx-background-color: #334155;
+    -fx-text-fill: #f8fafc;
+}
