@@ -11,6 +11,8 @@ public class AppConfig {
     private int maxExtensionsPerDay = 3;
     private int maxExtensionMinutesPerDay = 120;
     private int extensionReminderCadenceMinutes = 5;
+    private boolean aiEnabled = true;
+    private String geminiApiKey = "";
 
     public AppConfig() {}
     public int getDailyLimitMinutes() { return dailyLimitMinutes; }
@@ -29,4 +31,8 @@ public class AppConfig {
     public void setMaxExtensionMinutesPerDay(int maxExtensionMinutesPerDay) { this.maxExtensionMinutesPerDay = maxExtensionMinutesPerDay; }
     public int getExtensionReminderCadenceMinutes() { return extensionReminderCadenceMinutes; }
     public void setExtensionReminderCadenceMinutes(int extensionReminderCadenceMinutes) { this.extensionReminderCadenceMinutes = extensionReminderCadenceMinutes; }
+    public boolean isAiEnabled() { return aiEnabled; }
+    public void setAiEnabled(boolean aiEnabled) { this.aiEnabled = aiEnabled; }
+    public String getGeminiApiKey() { return geminiApiKey; }
+    public void setGeminiApiKey(String geminiApiKey) { this.geminiApiKey = geminiApiKey; }
 }
