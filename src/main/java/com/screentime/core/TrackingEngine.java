@@ -9,6 +9,7 @@ public class TrackingEngine {
     private final UsageDao usageDao;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicLong todayActiveSeconds = new AtomicLong(0);
+    private final AtomicLong todayIdleSeconds = new AtomicLong(0);
     private ActivityState currentState = ActivityState.UNKNOWN;
 
     public TrackingEngine() { this(WindowDetectorFactory.createDetector(), new IdleDetector(), new UsageDao(), 5, 60); }
@@ -17,4 +18,5 @@ public class TrackingEngine {
     }
     public ActivityState getCurrentState() { return currentState; }
     public long getTodayActiveSeconds() { return todayActiveSeconds.get(); }
+    public long getTodayIdleSeconds() { return todayIdleSeconds.get(); }
 }
