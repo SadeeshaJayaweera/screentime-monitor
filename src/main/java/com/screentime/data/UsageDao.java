@@ -77,4 +77,6 @@ public class UsageDao {
         } catch (SQLException ignored) {}
         return list;
     }
+
+    public java.util.List<AppUsage> getAppUsageForDate(java.time.LocalDate date) { return getTopAppsForDate(date, 1000); }
 }
