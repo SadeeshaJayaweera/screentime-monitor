@@ -25,4 +25,11 @@ class UsageDaoTest {
         usageDao.recordSession(new TrackingSession("IDE", "", now.minusMinutes(5), now, false));
         assertEquals(300, usageDao.getTodayUsageSeconds());
     }
+    @Test
+    void testGetTopAppsToday() {
+        LocalDateTime now = LocalDateTime.now();
+        usageDao.recordSession(new TrackingSession("AppA", "", now.minusSeconds(100), now, false));
+        usageDao.recordSession(new TrackingSession("AppB", "", now.minusSeconds(300), now, false));
+        assertEquals(2, usageDao.getTopAppsToday(2).size());
+    }
 }
