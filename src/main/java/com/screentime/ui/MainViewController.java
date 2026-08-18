@@ -20,7 +20,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
@@ -37,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -127,13 +125,12 @@ public class MainViewController implements TrackingListener {
 
     @FXML
     public void initialize() {
-        // Fallback default init if services are not yet injected
         if (usageDao == null) usageDao = new UsageDao();
         if (restrictionEngine == null) restrictionEngine = new RestrictionEngine();
         if (healthSuggestionService == null) healthSuggestionService = new HealthSuggestionService();
 
         if (progressRingContainer != null) {
-            progressRing = new ProgressRing(150, 12);
+            progressRing = new ProgressRing(165, 13);
             progressRingContainer.getChildren().add(progressRing);
         }
 
@@ -170,7 +167,8 @@ public class MainViewController implements TrackingListener {
     public void onWindowChanged(WindowInfo windowInfo) {
         Platform.runLater(() -> {
             if (currentAppBadge != null && windowInfo != null) {
-                currentAppBadge.setText("Active: " + windowInfo.getAppName());
+                String glyph = resolveAppGlyph(windowInfo.getAppName());
+                currentAppBadge.setText(glyph + "  Active: " + windowInfo.getAppName());
             }
         });
     }
@@ -291,7 +289,7 @@ public class MainViewController implements TrackingListener {
 
         int percentUsed = limitSeconds > 0 ? (int) ((activeSeconds * 100) / limitSeconds) : 0;
         if (progressPercentLabel != null) {
-            progressPercentLabel.setText(percentUsed + "% of daily limit");
+            progressPercentLabel.setText(percentUsed + "% of Daily Goal");
         }
 
         if (progressRing != null) {
@@ -308,17 +306,17 @@ public class MainViewController implements TrackingListener {
         if (warningBanner == null) return;
 
         if (percentUsed >= 100) {
-            warningBanner.setText(String.format("🚨 Daily Limit Reached (%d mins). Take a break or request an extension!", effectiveLimit));
+            warningBanner.setText(String.format("🚨 Daily Limit Reached (%d mins). Please take an ergonomic break or request an extension!", effectiveLimit));
             warningBanner.getStyleClass().setAll("banner-critical");
             warningBanner.setVisible(true);
             warningBanner.setManaged(true);
-            if (todayActiveTimeLabel != null) todayActiveTimeLabel.setStyle("-fx-text-fill: #ef4444;");
+            if (todayActiveTimeLabel != null) todayActiveTimeLabel.setStyle("-fx-text-fill: #f87171;");
         } else if (percentUsed >= 75) {
-            warningBanner.setText(String.format("⚠️ Approaching Daily Limit: %d%% used (%d minutes remaining).", percentUsed, remainingMinutes));
+            warningBanner.setText(String.format("⚠️ Approaching Screen Limit: %d%% used (%d minutes remaining).", percentUsed, remainingMinutes));
             warningBanner.getStyleClass().setAll("banner-warning");
             warningBanner.setVisible(true);
             warningBanner.setManaged(true);
-            if (todayActiveTimeLabel != null) todayActiveTimeLabel.setStyle("-fx-text-fill: #f59e0b;");
+            if (todayActiveTimeLabel != null) todayActiveTimeLabel.setStyle("-fx-text-fill: #fbbf24;");
         } else {
             warningBanner.setVisible(false);
             warningBanner.setManaged(false);
@@ -333,8 +331,8 @@ public class MainViewController implements TrackingListener {
         List<AppUsage> topApps = usageDao.getTopAppsForDate(LocalDate.now(), 5);
 
         if (topApps.isEmpty()) {
-            Label emptyLabel = new Label("No application activity recorded yet today.");
-            emptyLabel.setStyle("-fx-text-fill: #64748b; -fx-font-style: italic; -fx-padding: 8 0;");
+            Label emptyLabel = new Label("No application activity recorded yet today. Start working to see usage analytics.");
+            emptyLabel.setStyle("-fx-text-fill: #64748b; -fx-font-style: italic; -fx-padding: 12 0;");
             topAppsContainer.getChildren().add(emptyLabel);
             return;
         }
@@ -342,23 +340,35 @@ public class MainViewController implements TrackingListener {
         long totalSecondsToday = topApps.stream().mapToLong(AppUsage::getSecondsUsed).sum();
         if (totalSecondsToday <= 0) totalSecondsToday = 1;
 
+        int rank = 1;
         for (AppUsage app : topApps) {
-            VBox row = new VBox(4);
-            row.setStyle("-fx-padding: 4 0;");
+            VBox row = new VBox(6);
+            row.getStyleClass().add("app-row");
 
-            HBox labelBox = new HBox();
+            HBox labelBox = new HBox(8);
             labelBox.setAlignment(Pos.CENTER_LEFT);
 
-            Label nameLabel = new Label(app.getAppName());
-            nameLabel.setStyle("-fx-text-fill: #f8fafc; -fx-font-weight: 600; -fx-font-size: 13px;");
+            // Rank Badge
+            Label rankLabel = new Label("#" + rank);
+            rankLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 11px; -fx-font-weight: 800; -fx-background-color: rgba(56, 189, 248, 0.12); -fx-padding: 2 6; -fx-background-radius: 4;");
+
+            // Glyph + App Name
+            String glyph = resolveAppGlyph(app.getAppName());
+            Label nameLabel = new Label(glyph + "  " + app.getAppName());
+            nameLabel.getStyleClass().add("app-name-label");
 
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
 
-            Label timeLabel = new Label(TimeFormatUtils.formatDurationSeconds(app.getSecondsUsed()));
-            timeLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px; -fx-font-weight: bold;");
+            // Percent & Formatted Time
+            int pct = (int) Math.round(((double) app.getSecondsUsed() / totalSecondsToday) * 100);
+            Label pctLabel = new Label(pct + "%");
+            pctLabel.setStyle("-fx-text-fill: #64748b; -fx-font-size: 11px; -fx-font-weight: 600;");
 
-            labelBox.getChildren().addAll(nameLabel, spacer, timeLabel);
+            Label timeLabel = new Label(TimeFormatUtils.formatDurationSeconds(app.getSecondsUsed()));
+            timeLabel.getStyleClass().add("app-time-label");
+
+            labelBox.getChildren().addAll(rankLabel, nameLabel, spacer, pctLabel, timeLabel);
 
             ProgressBar bar = new ProgressBar((double) app.getSecondsUsed() / totalSecondsToday);
             bar.setMaxWidth(Double.MAX_VALUE);
@@ -366,7 +376,20 @@ public class MainViewController implements TrackingListener {
 
             row.getChildren().addAll(labelBox, bar);
             topAppsContainer.getChildren().add(row);
+            rank++;
         }
+    }
+
+    private String resolveAppGlyph(String appName) {
+        if (appName == null) return "⚡";
+        String lower = appName.toLowerCase();
+        if (lower.contains("code") || lower.contains("intellij") || lower.contains("studio") || lower.contains("terminal") || lower.contains("xcode") || lower.contains("vim")) return "💻";
+        if (lower.contains("chrome") || lower.contains("safari") || lower.contains("firefox") || lower.contains("edge") || lower.contains("brave")) return "🌐";
+        if (lower.contains("slack") || lower.contains("teams") || lower.contains("discord") || lower.contains("zoom") || lower.contains("telegram") || lower.contains("whatsapp")) return "💬";
+        if (lower.contains("word") || lower.contains("excel") || lower.contains("pages") || lower.contains("notion") || lower.contains("notes") || lower.contains("obsidian")) return "📄";
+        if (lower.contains("spotify") || lower.contains("music") || lower.contains("youtube") || lower.contains("vlc")) return "🎵";
+        if (lower.contains("finder") || lower.contains("explorer") || lower.contains("files")) return "📁";
+        return "⚡";
     }
 
     @FXML
@@ -533,16 +556,21 @@ public class MainViewController implements TrackingListener {
             aiAssessmentText.setText(output.getAssessment());
         }
 
+        if (aiStatusBadge != null) {
+            String source = output.isLiveGemini() ? "Google Gemini 1.5" : "Clinical Offline Rules";
+            aiStatusBadge.setText("✨ " + source);
+        }
+
         if (aiConcernsContainer != null) {
             aiConcernsContainer.getChildren().clear();
             if (output.getConcerns() == null || output.getConcerns().isEmpty()) {
-                Label badge = new Label("✅ No severe strain concerns detected");
-                badge.setStyle("-fx-background-color: rgba(34, 197, 94, 0.15); -fx-text-fill: #4ade80; -fx-padding: 4 10; -fx-background-radius: 12; -fx-font-size: 11px; -fx-font-weight: bold;");
+                Label badge = new Label("✅ No severe optical or posture strain detected");
+                badge.getStyleClass().setAll("badge-active");
                 aiConcernsContainer.getChildren().add(badge);
             } else {
                 for (String concern : output.getConcerns()) {
                     Label badge = new Label("⚠️ " + concern);
-                    badge.setStyle("-fx-background-color: rgba(245, 158, 11, 0.15); -fx-text-fill: #fbbf24; -fx-padding: 4 10; -fx-background-radius: 12; -fx-font-size: 11px; -fx-font-weight: bold;");
+                    badge.getStyleClass().setAll("badge-warning");
                     aiConcernsContainer.getChildren().add(badge);
                 }
             }
@@ -552,16 +580,16 @@ public class MainViewController implements TrackingListener {
             aiSuggestionsContainer.getChildren().clear();
 
             for (String tip : output.getSuggestions()) {
-                HBox tipCard = new HBox(10);
+                HBox tipCard = new HBox(12);
                 tipCard.setAlignment(Pos.CENTER_LEFT);
-                tipCard.setStyle("-fx-background-color: #1e293b; -fx-padding: 12 16; -fx-background-radius: 8;");
+                tipCard.getStyleClass().add("ai-suggestion-card");
 
                 Label bullet = new Label("💡");
-                bullet.setStyle("-fx-font-size: 16px;");
+                bullet.setStyle("-fx-font-size: 18px;");
 
                 Label text = new Label(tip);
                 text.setWrapText(true);
-                text.setStyle("-fx-text-fill: #f1f5f9; -fx-font-size: 13px;");
+                text.setStyle("-fx-text-fill: #f1f5f9; -fx-font-size: 13px; -fx-font-weight: 500;");
 
                 tipCard.getChildren().addAll(bullet, text);
                 aiSuggestionsContainer.getChildren().add(tipCard);
@@ -652,7 +680,8 @@ public class MainViewController implements TrackingListener {
             }
 
             if (settingsSavedLabel != null) {
-                settingsSavedLabel.setText("✅ Settings saved successfully!");
+                settingsSavedLabel.setStyle("-fx-text-fill: #4ade80; -fx-font-weight: bold; -fx-font-size: 13px;");
+                settingsSavedLabel.setText("✅ Preferences saved successfully!");
             }
             refreshTodayView();
             logger.info("Saved and applied new application settings.");
