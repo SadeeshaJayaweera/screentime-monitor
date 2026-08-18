@@ -1,130 +1,337 @@
 package com.screentime.data;
-import java.sql.*;
 
+import com.screentime.core.TrackingSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Data Access Object for screen time usage persistence, session logging,
+ * daily and application aggregations, and date-range metrics.
+ */
 public class UsageDao {
-    private final DatabaseManager databaseManager;
-    public UsageDao() { this(DatabaseManager.getInstance()); }
-    public UsageDao(DatabaseManager dm) { this.databaseManager = dm; }
 
-    public synchronized void recordSession(com.screentime.core.TrackingSession session) {
-        if (session == null || session.getDurationSeconds() <= 0) return;
-        if (!session.getStartTime().toLocalDate().equals(session.getEndTime().toLocalDate())) {
-            for (com.screentime.core.TrackingSession split : session.splitAtMidnight()) {
-                recordSession(split);
-            }
+    private static final Logger logger = LoggerFactory.getLogger(UsageDao.class);
+    private final DatabaseManager databaseManager;
+
+    public UsageDao() {
+        this(DatabaseManager.getInstance());
+    }
+
+    public UsageDao(DatabaseManager databaseManager) {
+        this.databaseManager = Objects.requireNonNull(databaseManager, "DatabaseManager must not be null");
+    }
+
+    /**
+     * Records a completed TrackingSession.
+     * Handles splitting multi-day sessions crossing midnight and atomically updates
+     * `sessions`, `app_usage`, and `daily_usage`.
+     *
+     * @param session The closed TrackingSession.
+     */
+    public synchronized void recordSession(TrackingSession session) {
+        if (session == null || session.getDurationSeconds() <= 0) {
             return;
         }
+
+        ZoneId zone = ZoneId.systemDefault();
+        ZonedDateTime startZdt = session.getStartTime().atZone(zone);
+        ZonedDateTime endZdt = session.getEndTime().atZone(zone);
+
+        LocalDate startDate = startZdt.toLocalDate();
+        LocalDate endDate = endZdt.toLocalDate();
+
+        if (startDate.equals(endDate)) {
+            // Single-day session
+            insertSingleSession(startDate, session.getAppName(), session.getStartTime(), session.getEndTime(), session.getDurationSeconds());
+        } else {
+            // Multi-day session: split across midnight boundaries
+            ZonedDateTime currentBoundaryStart = startZdt;
+            LocalDate currentDate = startDate;
+
+            while (!currentDate.isAfter(endDate)) {
+                ZonedDateTime currentBoundaryEnd;
+                if (currentDate.equals(endDate)) {
+                    currentBoundaryEnd = endZdt;
+                } else {
+                    currentBoundaryEnd = currentDate.plusDays(1).atStartOfDay(zone);
+                }
+
+                long duration = Duration.between(currentBoundaryStart, currentBoundaryEnd).getSeconds();
+                if (duration > 0) {
+                    insertSingleSession(currentDate, session.getAppName(), currentBoundaryStart.toInstant(), currentBoundaryEnd.toInstant(), duration);
+                }
+
+                currentDate = currentDate.plusDays(1);
+                currentBoundaryStart = currentDate.atStartOfDay(zone);
+            }
+        }
+    }
+
+    private void insertSingleSession(LocalDate date, String appName, Instant start, Instant end, long durationSeconds) {
+        String dateStr = date.toString();
+
+        String insertSessionSql = """
+            INSERT INTO sessions (date, app_name, start_time, end_time, duration_seconds)
+            VALUES (?, ?, ?, ?, ?)
+        """;
+
+        String upsertAppUsageSql = """
+            INSERT INTO app_usage (date, app_name, seconds_used)
+            VALUES (?, ?, ?)
+            ON CONFLICT(date, app_name) DO UPDATE SET
+                seconds_used = seconds_used + excluded.seconds_used
+        """;
+
+        String upsertDailyUsageSql = """
+            INSERT INTO daily_usage (date, total_active_seconds, total_idle_seconds)
+            VALUES (?, ?, 0)
+            ON CONFLICT(date) DO UPDATE SET
+                total_active_seconds = total_active_seconds + excluded.total_active_seconds
+        """;
+
         try (Connection conn = databaseManager.getConnection()) {
-            String sql = "INSERT INTO sessions(date, app_name, start_time, end_time, duration_seconds) VALUES(?, ?, ?, ?, ?)";
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, session.getDate().toString());
-                pstmt.setString(2, session.getAppName());
-                pstmt.setString(3, session.getStartTime().toString());
-                pstmt.setString(4, session.getEndTime().toString());
-                pstmt.setLong(5, session.getDurationSeconds());
-                pstmt.executeUpdate();
-            }
-            String upsertDailySql = "INSERT INTO daily_usage (date, total_active_seconds, total_idle_seconds) VALUES (?, ?, ?) ON CONFLICT(date) DO UPDATE SET total_active_seconds = total_active_seconds + excluded.total_active_seconds, total_idle_seconds = total_idle_seconds + excluded.total_idle_seconds;";
-            try (PreparedStatement pDaily = conn.prepareStatement(upsertDailySql)) {
-                pDaily.setString(1, session.getDate().toString());
-                pDaily.setLong(2, session.isIdle() ? 0 : session.getDurationSeconds());
-                pDaily.setLong(3, session.isIdle() ? session.getDurationSeconds() : 0);
-                pDaily.executeUpdate();
-            }
-            if (!session.isIdle()) {
-                String upsertAppSql = "INSERT INTO app_usage (date, app_name, seconds_used) VALUES (?, ?, ?) ON CONFLICT(date, app_name) DO UPDATE SET seconds_used = seconds_used + excluded.seconds_used;";
-                try (PreparedStatement pApp = conn.prepareStatement(upsertAppSql)) {
-                    pApp.setString(1, session.getDate().toString());
-                    pApp.setString(2, session.getAppName());
-                    pApp.setLong(3, session.getDurationSeconds());
-                    pApp.executeUpdate();
+            conn.setAutoCommit(false);
+            try {
+                // 1. Insert session record
+                try (PreparedStatement psSession = conn.prepareStatement(insertSessionSql)) {
+                    psSession.setString(1, dateStr);
+                    psSession.setString(2, appName);
+                    psSession.setString(3, start.toString());
+                    psSession.setString(4, end.toString());
+                    psSession.setLong(5, durationSeconds);
+                    psSession.executeUpdate();
                 }
+
+                // 2. Upsert app usage
+                try (PreparedStatement psApp = conn.prepareStatement(upsertAppUsageSql)) {
+                    psApp.setString(1, dateStr);
+                    psApp.setString(2, appName);
+                    psApp.setLong(3, durationSeconds);
+                    psApp.executeUpdate();
+                }
+
+                // 3. Upsert daily usage
+                try (PreparedStatement psDaily = conn.prepareStatement(upsertDailyUsageSql)) {
+                    psDaily.setString(1, dateStr);
+                    psDaily.setLong(2, durationSeconds);
+                    psDaily.executeUpdate();
+                }
+
+                conn.commit();
+                logger.debug("Persisted session for app '{}' on {}: {}s", appName, dateStr, durationSeconds);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
-        } catch (SQLException ignored) {}
+        } catch (SQLException e) {
+            logger.error("Failed to record session for app '{}' on {}: {}", appName, dateStr, e.getMessage(), e);
+        }
     }
 
-    public long getTodayUsageSeconds() { return getUsageForDate(java.time.LocalDate.now()); }
-    public long getUsageForDate(java.time.LocalDate date) {
+    /**
+     * Gets the total active screen time in seconds for today.
+     */
+    public int getTodayUsageSeconds() {
+        return (int) getActiveSecondsForDate(LocalDate.now());
+    }
+
+    /**
+     * Gets the total active seconds recorded for a given date.
+     */
+    public long getActiveSecondsForDate(LocalDate date) {
         String sql = "SELECT total_active_seconds FROM daily_usage WHERE date = ?";
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, date.toString());
-            try (ResultSet rs = pstmt.executeQuery()) { if (rs.next()) return rs.getLong("total_active_seconds"); }
-        } catch (SQLException ignored) {}
-        return 0L;
-    }
-
-    public DailyUsageSummary getDailySummary(java.time.LocalDate date) {
-        String sql = "SELECT total_active_seconds, total_idle_seconds FROM daily_usage WHERE date = ?";
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, date.toString());
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) return new DailyUsageSummary(date, rs.getLong("total_active_seconds"), rs.getLong("total_idle_seconds"));
-            }
-        } catch (SQLException ignored) {}
-        return new DailyUsageSummary(date, 0L, 0L);
-    }
-
-    public java.util.List<AppUsage> getTopAppsToday(int limit) { return getTopAppsForDate(java.time.LocalDate.now(), limit); }
-    public java.util.List<AppUsage> getTopAppsForDate(java.time.LocalDate date, int limit) {
-        String sql = "SELECT app_name, seconds_used FROM app_usage WHERE date = ? ORDER BY seconds_used DESC LIMIT ?";
-        java.util.List<AppUsage> list = new java.util.ArrayList<>();
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, date.toString());
-            pstmt.setInt(2, limit);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) list.add(new AppUsage(date, rs.getString("app_name"), rs.getLong("seconds_used")));
-            }
-        } catch (SQLException ignored) {}
-        return list;
-    }
-
-    public java.util.List<AppUsage> getAppUsageForDate(java.time.LocalDate date) { return getTopAppsForDate(date, 1000); }
-
-    public java.util.List<DailyUsageSummary> getUsageForDateRange(java.time.LocalDate start, java.time.LocalDate end) {
-        String sql = "SELECT date, total_active_seconds, total_idle_seconds FROM daily_usage WHERE date >= ? AND date <= ? ORDER BY date ASC";
-        java.util.List<DailyUsageSummary> results = new java.util.ArrayList<>();
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, start.toString());
-            pstmt.setString(2, end.toString());
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    results.add(new DailyUsageSummary(java.time.LocalDate.parse(rs.getString("date")), rs.getLong("total_active_seconds"), rs.getLong("total_idle_seconds")));
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, date.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("total_active_seconds");
                 }
             }
-        } catch (SQLException ignored) {}
+        } catch (SQLException e) {
+            logger.error("Failed to query active seconds for date {}: {}", date, e.getMessage(), e);
+        }
+        return 0;
+    }
+
+    /**
+     * Retrieves aggregated metrics and per-app breakdown for a specific date.
+     */
+    public DailyUsageSummary getUsageForDate(LocalDate date) {
+        long activeSeconds = 0;
+        long idleSeconds = 0;
+
+        String dailySql = "SELECT total_active_seconds, total_idle_seconds FROM daily_usage WHERE date = ?";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(dailySql)) {
+            ps.setString(1, date.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    activeSeconds = rs.getLong("total_active_seconds");
+                    idleSeconds = rs.getLong("total_idle_seconds");
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to fetch daily summary for date {}: {}", date, e.getMessage(), e);
+        }
+
+        List<AppUsage> apps = getTopAppsForDate(date, Integer.MAX_VALUE);
+        return new DailyUsageSummary(date, activeSeconds, idleSeconds, apps);
+    }
+
+    /**
+     * Retrieves a list of DailyUsageSummary objects for a range of dates [start, end] inclusive.
+     */
+    public List<DailyUsageSummary> getUsageForDateRange(LocalDate start, LocalDate end) {
+        List<DailyUsageSummary> results = new ArrayList<>();
+        if (start == null || end == null || start.isAfter(end)) {
+            return results;
+        }
+
+        LocalDate cur = start;
+        while (!cur.isAfter(end)) {
+            results.add(getUsageForDate(cur));
+            cur = cur.plusDays(1);
+        }
         return results;
     }
 
-    public synchronized void recordExtension(java.time.LocalDate date, int requestedMinutes, String reason) {
-        String sql = "INSERT INTO limit_extensions(date, requested_minutes, requested_at, reason) VALUES(?, ?, ?, ?)";
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, date.toString());
-            pstmt.setInt(2, requestedMinutes);
-            pstmt.setString(3, java.time.LocalDateTime.now().toString());
-            pstmt.setString(4, reason != null ? reason : "Manual request");
-            pstmt.executeUpdate();
-        } catch (SQLException ignored) {}
-    }
+    /**
+     * Returns top applications by usage for a given date sorted descending by seconds_used.
+     */
+    public List<AppUsage> getTopAppsForDate(LocalDate date, int limit) {
+        List<AppUsage> list = new ArrayList<>();
+        String sql = """
+            SELECT id, date, app_name, seconds_used
+            FROM app_usage
+            WHERE date = ?
+            ORDER BY seconds_used DESC
+            LIMIT ?
+        """;
 
-    public record ExtensionStats(int count, int totalMinutes) {}
-    public ExtensionStats getTodayExtensionStats() { return getExtensionStatsForDate(java.time.LocalDate.now()); }
-    public ExtensionStats getExtensionStatsForDate(java.time.LocalDate date) {
-        String sql = "SELECT COUNT(*) as ext_count, COALESCE(SUM(requested_minutes), 0) as total_mins FROM limit_extensions WHERE date = ?";
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, date.toString());
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) return new ExtensionStats(rs.getInt("ext_count"), rs.getInt("total_mins"));
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, date.toString());
+            ps.setInt(2, Math.max(1, limit));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new AppUsage(
+                            rs.getLong("id"),
+                            LocalDate.parse(rs.getString("date")),
+                            rs.getString("app_name"),
+                            rs.getLong("seconds_used")
+                    ));
+                }
             }
-        } catch (SQLException ignored) {}
-        return new ExtensionStats(0, 0);
+        } catch (SQLException e) {
+            logger.error("Failed to fetch top apps for date {}: {}", date, e.getMessage(), e);
+        }
+        return list;
     }
 
-    public synchronized void savePeriodicDailyActiveSnapshot(java.time.LocalDate date, long totalActiveSeconds) {
-        String upsertSql = "INSERT INTO daily_usage (date, total_active_seconds, total_idle_seconds) VALUES (?, ?, 0) ON CONFLICT(date) DO UPDATE SET total_active_seconds = excluded.total_active_seconds;";
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(upsertSql)) {
-            pstmt.setString(1, date.toString());
-            pstmt.setLong(2, totalActiveSeconds);
-            pstmt.executeUpdate();
-        } catch (SQLException ignored) {}
+    /**
+     * Saves a periodic snapshot of today's running total to disk.
+     * Uses MAX so that a snapshot never decreases already persisted totals.
+     */
+    public synchronized void savePeriodicDailyActiveSnapshot(LocalDate date, long totalActiveSeconds) {
+        String sql = """
+            INSERT INTO daily_usage (date, total_active_seconds, total_idle_seconds)
+            VALUES (?, ?, 0)
+            ON CONFLICT(date) DO UPDATE SET
+                total_active_seconds = MAX(total_active_seconds, excluded.total_active_seconds)
+        """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, date.toString());
+            ps.setLong(2, Math.max(0, totalActiveSeconds));
+            ps.executeUpdate();
+            logger.debug("Saved periodic daily active snapshot for {}: {}s", date, totalActiveSeconds);
+        } catch (SQLException e) {
+            logger.error("Failed to save periodic snapshot for {}: {}", date, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Increments daily idle seconds.
+     */
+    public synchronized void addIdleSeconds(LocalDate date, long idleSeconds) {
+        if (idleSeconds <= 0) return;
+        String sql = """
+            INSERT INTO daily_usage (date, total_active_seconds, total_idle_seconds)
+            VALUES (?, 0, ?)
+            ON CONFLICT(date) DO UPDATE SET
+                total_idle_seconds = total_idle_seconds + excluded.total_idle_seconds
+        """;
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, date.toString());
+            ps.setLong(2, idleSeconds);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.error("Failed to add idle seconds for {}: {}", date, e.getMessage(), e);
+        }
+    }
+
+    // --- Limit Extensions & Settings ---
+
+    public void recordLimitExtension(LimitExtensionRecord record) {
+        String sql = """
+            INSERT INTO limit_extensions (date, requested_minutes, requested_at, reason)
+            VALUES (?, ?, ?, ?)
+        """;
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, record.getDate().toString());
+            ps.setInt(2, record.getRequestedMinutes());
+            ps.setString(3, record.getRequestedAt().toString());
+            ps.setString(4, record.getReason());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.error("Failed to record limit extension: {}", e.getMessage(), e);
+        }
+    }
+
+    public String getSetting(String key, String defaultValue) {
+        String sql = "SELECT value FROM settings WHERE key = ?";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, key);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("value");
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to get setting '{}': {}", key, e.getMessage(), e);
+        }
+        return defaultValue;
+    }
+
+    public void setSetting(String key, String value) {
+        String sql = """
+            INSERT INTO settings (key, value)
+            VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        """;
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, key);
+            ps.setString(2, value);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.error("Failed to set setting '{}': {}", key, e.getMessage(), e);
+        }
     }
 }
