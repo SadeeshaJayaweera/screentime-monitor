@@ -1,6 +1,8 @@
 package com.screentime.ai;
-import java.net.http.HttpClient;
+import java.util.concurrent.CompletableFuture;
 
 public class GeminiClient {
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    public CompletableFuture<String> generateInsightsAsync(String p, String k) {
+        return CompletableFuture.completedFuture("");
+    }
 }
