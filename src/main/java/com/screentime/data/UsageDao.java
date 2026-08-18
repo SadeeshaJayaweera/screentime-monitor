@@ -94,4 +94,15 @@ public class UsageDao {
         } catch (SQLException ignored) {}
         return results;
     }
+
+    public synchronized void recordExtension(java.time.LocalDate date, int requestedMinutes, String reason) {
+        String sql = "INSERT INTO limit_extensions(date, requested_minutes, requested_at, reason) VALUES(?, ?, ?, ?)";
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, date.toString());
+            pstmt.setInt(2, requestedMinutes);
+            pstmt.setString(3, java.time.LocalDateTime.now().toString());
+            pstmt.setString(4, reason != null ? reason : "Manual request");
+            pstmt.executeUpdate();
+        } catch (SQLException ignored) {}
+    }
 }
