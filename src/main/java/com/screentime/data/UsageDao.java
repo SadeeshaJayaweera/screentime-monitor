@@ -105,4 +105,17 @@ public class UsageDao {
             pstmt.executeUpdate();
         } catch (SQLException ignored) {}
     }
+
+    public record ExtensionStats(int count, int totalMinutes) {}
+    public ExtensionStats getTodayExtensionStats() { return getExtensionStatsForDate(java.time.LocalDate.now()); }
+    public ExtensionStats getExtensionStatsForDate(java.time.LocalDate date) {
+        String sql = "SELECT COUNT(*) as ext_count, COALESCE(SUM(requested_minutes), 0) as total_mins FROM limit_extensions WHERE date = ?";
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, date.toString());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return new ExtensionStats(rs.getInt("ext_count"), rs.getInt("total_mins"));
+            }
+        } catch (SQLException ignored) {}
+        return new ExtensionStats(0, 0);
+    }
 }
