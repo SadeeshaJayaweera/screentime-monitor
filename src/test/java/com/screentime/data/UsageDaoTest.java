@@ -19,4 +19,10 @@ class UsageDaoTest {
         usageDao.recordSession(new TrackingSession("Google Chrome", "GitHub", now.minusMinutes(10), now, false));
         assertEquals(600, usageDao.getTodayUsageSeconds());
     }
+    @Test
+    void testGetTodayUsageSeconds() {
+        LocalDateTime now = LocalDateTime.now();
+        usageDao.recordSession(new TrackingSession("IDE", "", now.minusMinutes(5), now, false));
+        assertEquals(300, usageDao.getTodayUsageSeconds());
+    }
 }
