@@ -4,5 +4,5 @@
 <BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.screentime.ui.MainViewController">
     <left><VBox prefWidth="200"><Label text="ScreenTime"/></VBox></left>
-    <center><StackPane><VBox fx:id="todayView"><Label text="Today"/></VBox></StackPane></center>
+    <center><StackPane><VBox fx:id="todayView"><Label text="Today"/></VBox><VBox fx:id="historyView"><Label text="History"/></VBox></StackPane></center>
 </BorderPane>
