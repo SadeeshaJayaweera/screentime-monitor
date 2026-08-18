@@ -94,3 +94,57 @@
     -fx-text-fill: #64748b;
     -fx-font-weight: 400;
 }
+
+/* --- Glassmorphic Cards & Panels --- */
+.card {
+    -fx-background-color: linear-gradient(to bottom, #131c2e, #0f1626);
+    -fx-background-radius: 14px;
+    -fx-border-color: rgba(51, 65, 85, 0.7);
+    -fx-border-radius: 14px;
+    -fx-border-width: 1px;
+    -fx-padding: 20px 22px;
+    -fx-spacing: 14px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 14, 0, 0, 5);
+}
+
+.card-interactive:hover {
+    -fx-border-color: rgba(56, 189, 248, 0.4);
+}
+
+.card-sm {
+    -fx-background-color: linear-gradient(to bottom, #141e30, #101827);
+    -fx-background-radius: 10px;
+    -fx-border-color: #1e293b;
+    -fx-border-radius: 10px;
+    -fx-border-width: 1px;
+    -fx-padding: 14px 16px;
+    -fx-spacing: 6px;
+}
+
+.card-title {
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #94a3b8;
+    -fx-letter-spacing: 0.8px;
+    -fx-text-transform: uppercase;
+}
+
+.stat-number {
+    -fx-font-size: 32px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #f8fafc;
+    -fx-letter-spacing: -0.8px;
+}
+
+.stat-number-accent {
+    -fx-font-size: 32px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #38bdf8;
+    -fx-letter-spacing: -0.8px;
+}
+
+.stat-sublabel {
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #64748b;
+}
