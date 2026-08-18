@@ -19,6 +19,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <javafx.version>17.0.10</javafx.version>
         <sqlite.version>3.45.1.0</sqlite.version>
+        <jnativehook.version>2.2.2</jnativehook.version>
     </properties>
 
     <dependencies>
@@ -38,6 +39,12 @@
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>${sqlite.version}</version>
+        </dependency>
+        <!-- Global Native Keyboard/Mouse Hook for Idle Detection -->
+        <dependency>
+            <groupId>com.github.kwhat</groupId>
+            <artifactId>jnativehook</artifactId>
+            <version>${jnativehook.version}</version>
         </dependency>
     </dependencies>
 </project>
