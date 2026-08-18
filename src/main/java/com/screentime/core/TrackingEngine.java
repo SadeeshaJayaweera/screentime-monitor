@@ -1,10 +1,7 @@
 package com.screentime.core;
-import com.screentime.data.UsageDao;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.time.LocalDate;
 
 public class TrackingEngine {
-    private final List<TrackingListener> listeners = new CopyOnWriteArrayList<>();
-    public void addListener(TrackingListener l) { listeners.add(l); }
-    public void removeListener(TrackingListener l) { listeners.remove(l); }
+    private LocalDate currentTrackingDate = LocalDate.now();
+    public LocalDate getCurrentTrackingDate() { return currentTrackingDate; }
 }
