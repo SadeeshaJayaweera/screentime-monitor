@@ -17,4 +17,7 @@ public class IdleDetector implements NativeKeyListener, NativeMouseListener, Nat
     @Override public void nativeMouseReleased(NativeMouseEvent e) { recordInputEvent(); }
     @Override public void nativeMouseMoved(NativeMouseEvent e) { recordInputEvent(); }
     @Override public void nativeMouseDragged(NativeMouseEvent e) { recordInputEvent(); }
+    public boolean isIdle(int thresholdSeconds) {
+        return (System.currentTimeMillis() - lastActivity.get()) >= (thresholdSeconds * 1000L);
+    }
 }
