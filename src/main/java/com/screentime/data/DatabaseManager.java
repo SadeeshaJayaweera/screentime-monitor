@@ -17,6 +17,7 @@ public class DatabaseManager {
             stmt.execute("CREATE TABLE IF NOT EXISTS app_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, app_name TEXT NOT NULL, seconds_used INTEGER NOT NULL DEFAULT 0, UNIQUE(date, app_name));");
             stmt.execute("CREATE TABLE IF NOT EXISTS sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, app_name TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT NOT NULL, duration_seconds INTEGER NOT NULL);");
             stmt.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);");
+            stmt.execute("CREATE TABLE IF NOT EXISTS limit_extensions (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, requested_minutes INTEGER NOT NULL, requested_at TEXT NOT NULL, reason TEXT);");
         } catch (SQLException ignored) {}
     }
 }
