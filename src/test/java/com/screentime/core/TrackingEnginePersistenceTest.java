@@ -9,8 +9,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TrackingEnginePersistenceTest {
     private TrackingEngine engine;
+    private UsageDao dao;
     @BeforeEach void setUp(@TempDir Path tempDir) {
-        engine = new TrackingEngine(() -> new WindowInfo("Test", "T", 1), new IdleDetector(), new UsageDao(new DatabaseManager(tempDir.resolve("p.db"))), 1, 5);
+        dao = new UsageDao(new DatabaseManager(tempDir.resolve("p.db")));
+        engine = new TrackingEngine(() -> new WindowInfo("Test", "T", 1), new IdleDetector(), dao, 1, 5);
     }
-    @Test void testPersist() { assertNotNull(engine); }
+    @Test void testSessionPersisted() {
+        engine.start();
+        engine.poll();
+        engine.stop();
+        assertTrue(dao.getTodayUsageSeconds() >= 0);
+    }
 }
