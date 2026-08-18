@@ -14,10 +14,11 @@ class RestrictionEngineTest {
         RestrictionConfig c = new RestrictionConfig();
         c.setDailyLimitMinutes(120);
         c.setMaxExtensionsPerDay(2);
-        c.setMaxExtensionMinutesPerDay(60);
+        c.setMaxExtensionMinutesPerDay(45);
         engine = new RestrictionEngine(c, new UsageDao(new DatabaseManager(tempDir.resolve("r.db"))), NotificationService.getInstance());
     }
-    @Test void testExtensionAllowedWithinCaps() {
-        assertTrue(engine.requestExtension(30, "Test").granted());
+    @Test void testExtensionMinutesCapEnforced() {
+        engine.requestExtension(30, "First");
+        assertFalse(engine.requestExtension(30, "Second").granted());
     }
 }
