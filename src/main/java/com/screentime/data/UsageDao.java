@@ -63,4 +63,18 @@ public class UsageDao {
         } catch (SQLException ignored) {}
         return new DailyUsageSummary(date, 0L, 0L);
     }
+
+    public java.util.List<AppUsage> getTopAppsToday(int limit) { return getTopAppsForDate(java.time.LocalDate.now(), limit); }
+    public java.util.List<AppUsage> getTopAppsForDate(java.time.LocalDate date, int limit) {
+        String sql = "SELECT app_name, seconds_used FROM app_usage WHERE date = ? ORDER BY seconds_used DESC LIMIT ?";
+        java.util.List<AppUsage> list = new java.util.ArrayList<>();
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, date.toString());
+            pstmt.setInt(2, limit);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) list.add(new AppUsage(date, rs.getString("app_name"), rs.getLong("seconds_used")));
+            }
+        } catch (SQLException ignored) {}
+        return list;
+    }
 }
