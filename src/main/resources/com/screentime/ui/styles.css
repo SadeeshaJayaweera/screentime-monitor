@@ -386,3 +386,40 @@
     -fx-text-fill: #38bdf8;
     -fx-font-weight: 700;
 }
+
+/* --- Charts --- */
+.chart {
+    -fx-padding: 12px;
+    -fx-background-color: transparent;
+}
+
+.chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+.chart-vertical-grid-lines, .chart-horizontal-grid-lines {
+    -fx-stroke: rgba(51, 65, 85, 0.4);
+    -fx-stroke-dash-array: 3 3;
+}
+
+.axis {
+    -fx-tick-label-fill: #94a3b8;
+    -fx-font-size: 11px;
+}
+
+.axis-label {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.chart-bar {
+    -fx-background-color: linear-gradient(to top, #0284c7, #38bdf8);
+    -fx-background-radius: 6px 6px 0 0;
+    -fx-effect: dropshadow(gaussian, rgba(56, 189, 248, 0.2), 6, 0, 0, 0);
+}
+
+.chart-bar:hover {
+    -fx-background-color: linear-gradient(to top, #0369a1, #60a5fa);
+    -fx-effect: dropshadow(gaussian, rgba(96, 165, 250, 0.45), 10, 0, 0, 0);
+}
