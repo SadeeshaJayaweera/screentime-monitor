@@ -9,4 +9,9 @@ public class NotificationService {
         if (instance == null) instance = new NotificationService();
         return instance;
     }
+    public void notify(String title, String message, NotificationLevel level) {
+        if (trayIcon != null) {
+            trayIcon.displayMessage(title, message, TrayIcon.MessageType.INFO);
+        }
+    }
 }
