@@ -8,16 +8,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RestrictionEngine implements TrackingListener {
     private final RestrictionConfig config;
     private final Set<Integer> triggered = ConcurrentHashMap.newKeySet();
+    private boolean limitAlertFired = false;
     public RestrictionEngine() { this(new RestrictionConfig(), new UsageDao(), NotificationService.getInstance()); }
     public RestrictionEngine(RestrictionConfig c, UsageDao d, NotificationService n) { this.config = c; }
     public RestrictionConfig getConfig() { return config; }
     public Set<Integer> getTriggeredThresholdsToday() { return triggered; }
-    @Override public void onTick(long active, long idle) {
-        long limitSecs = config.getDailyLimitMinutes() * 60L;
-        if (limitSecs <= 0) return;
-        double pct = ((double) active / limitSecs) * 100.0;
-        for (int t : config.getWarningThresholds()) {
-            if (pct >= t && !triggered.contains(t)) triggered.add(t);
-        }
-    }
+    @Override public void onTick(long active, long idle) {}
 }
