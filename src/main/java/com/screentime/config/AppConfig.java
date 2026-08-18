@@ -13,6 +13,10 @@ public class AppConfig {
     private int extensionReminderCadenceMinutes = 5;
     private boolean aiEnabled = true;
     private String geminiApiKey = "";
+    private boolean onboardingCompleted = false;
+    private boolean startMinimizedToTray = false;
+    private boolean notificationsEnabled = true;
+    private boolean autostartOnLogin = false;
 
     public AppConfig() {}
     public int getDailyLimitMinutes() { return dailyLimitMinutes; }
@@ -35,4 +39,12 @@ public class AppConfig {
     public void setAiEnabled(boolean aiEnabled) { this.aiEnabled = aiEnabled; }
     public String getGeminiApiKey() { return geminiApiKey; }
     public void setGeminiApiKey(String geminiApiKey) { this.geminiApiKey = geminiApiKey; }
+    public boolean isOnboardingCompleted() { return onboardingCompleted; }
+    public void setOnboardingCompleted(boolean onboardingCompleted) { this.onboardingCompleted = onboardingCompleted; }
+    public boolean isStartMinimizedToTray() { return startMinimizedToTray; }
+    public void setStartMinimizedToTray(boolean startMinimizedToTray) { this.startMinimizedToTray = startMinimizedToTray; }
+    public boolean isNotificationsEnabled() { return notificationsEnabled; }
+    public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
+    public boolean isAutostartOnLogin() { return autostartOnLogin; }
+    public void setAutostartOnLogin(boolean autostartOnLogin) { this.autostartOnLogin = autostartOnLogin; }
 }
