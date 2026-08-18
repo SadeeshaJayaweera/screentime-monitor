@@ -148,3 +148,59 @@
     -fx-font-weight: 500;
     -fx-text-fill: #64748b;
 }
+
+/* --- Dynamic Status Badges & Pills --- */
+.badge-active {
+    -fx-background-color: rgba(34, 197, 94, 0.14);
+    -fx-text-fill: #4ade80;
+    -fx-border-color: rgba(74, 222, 128, 0.3);
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4px 12px;
+}
+
+.badge-warning {
+    -fx-background-color: rgba(245, 158, 11, 0.14);
+    -fx-text-fill: #fbbf24;
+    -fx-border-color: rgba(251, 191, 36, 0.3);
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4px 12px;
+}
+
+.badge-critical {
+    -fx-background-color: rgba(239, 68, 68, 0.14);
+    -fx-text-fill: #f87171;
+    -fx-border-color: rgba(248, 113, 113, 0.3);
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4px 12px;
+}
+
+.badge-idle {
+    -fx-background-color: rgba(148, 163, 184, 0.14);
+    -fx-text-fill: #94a3b8;
+    -fx-border-color: rgba(148, 163, 184, 0.3);
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4px 12px;
+}
+
+.badge-ai-model {
+    -fx-background-color: rgba(139, 92, 246, 0.14);
+    -fx-text-fill: #a78bfa;
+    -fx-border-color: rgba(167, 139, 250, 0.3);
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4px 12px;
+}
