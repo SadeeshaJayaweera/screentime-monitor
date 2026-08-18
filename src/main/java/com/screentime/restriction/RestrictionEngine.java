@@ -8,4 +8,5 @@ public class RestrictionEngine implements TrackingListener {
     public RestrictionEngine() { this(new RestrictionConfig(), new UsageDao(), NotificationService.getInstance()); }
     public RestrictionEngine(RestrictionConfig c, UsageDao d, NotificationService n) { this.config = c; }
     public RestrictionConfig getConfig() { return config; }
+    @Override public void onTick(long active, long idle) {}
 }
