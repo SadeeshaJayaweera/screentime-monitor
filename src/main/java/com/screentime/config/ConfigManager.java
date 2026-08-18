@@ -28,24 +28,12 @@ public class ConfigManager {
         return Paths.get(System.getProperty("user.home"), ".screentime-monitor").toAbsolutePath().normalize();
     }
 
-    public synchronized AppConfig loadConfig() {
-        if (Files.exists(configFilePath)) {
-            try (FileReader reader = new FileReader(configFilePath.toFile())) {
-                AppConfig loaded = gson.fromJson(reader, AppConfig.class);
-                if (loaded != null) { this.config = loaded; return this.config; }
-            } catch (Exception ignored) {}
-        }
-        this.config = new AppConfig();
-        return this.config;
-    }
-
-    public synchronized boolean saveConfig() {
-        try {
-            if (!Files.exists(appDataDir)) Files.createDirectories(appDataDir);
-            try (FileWriter writer = new FileWriter(configFilePath.toFile())) {
-                gson.toJson(config != null ? config : new AppConfig(), writer);
-                return true;
-            }
-        } catch (Exception e) { return false; }
+    public String getEffectiveGeminiApiKey() {
+        if (config != null && config.getGeminiApiKey() != null && !config.getGeminiApiKey().isBlank()) return config.getGeminiApiKey().trim();
+        String envKey = System.getenv("GEMINI_API_KEY");
+        if (envKey != null && !envKey.isBlank()) return envKey.trim();
+        String propKey = System.getProperty("gemini.api.key");
+        if (propKey != null && !propKey.isBlank()) return propKey.trim();
+        return "";
     }
 }
