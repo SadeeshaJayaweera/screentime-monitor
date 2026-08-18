@@ -42,4 +42,14 @@ public class UsageDao {
             }
         } catch (SQLException ignored) {}
     }
+
+    public long getTodayUsageSeconds() { return getUsageForDate(java.time.LocalDate.now()); }
+    public long getUsageForDate(java.time.LocalDate date) {
+        String sql = "SELECT total_active_seconds FROM daily_usage WHERE date = ?";
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, date.toString());
+            try (ResultSet rs = pstmt.executeQuery()) { if (rs.next()) return rs.getLong("total_active_seconds"); }
+        } catch (SQLException ignored) {}
+        return 0L;
+    }
 }
