@@ -25,6 +25,15 @@ public class UsageDao {
                 pDaily.setLong(3, session.isIdle() ? session.getDurationSeconds() : 0);
                 pDaily.executeUpdate();
             }
+            if (!session.isIdle()) {
+                String upsertAppSql = "INSERT INTO app_usage (date, app_name, seconds_used) VALUES (?, ?, ?) ON CONFLICT(date, app_name) DO UPDATE SET seconds_used = seconds_used + excluded.seconds_used;";
+                try (PreparedStatement pApp = conn.prepareStatement(upsertAppSql)) {
+                    pApp.setString(1, session.getDate().toString());
+                    pApp.setString(2, session.getAppName());
+                    pApp.setLong(3, session.getDurationSeconds());
+                    pApp.executeUpdate();
+                }
+            }
         } catch (SQLException ignored) {}
     }
 }
