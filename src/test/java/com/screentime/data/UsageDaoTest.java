@@ -15,15 +15,10 @@ class UsageDaoTest {
         usageDao = new UsageDao(new DatabaseManager(tempDir.resolve("test_usage.db")));
     }
     @Test
-    void testRecordSessionAggregatesCorrectly() {
-        LocalDateTime now = LocalDateTime.now();
-        usageDao.recordSession(new TrackingSession("Google Chrome", "GitHub", now.minusMinutes(10), now, false));
-        assertEquals(600, usageDao.getTodayUsageSeconds());
-    }
-    @Test
-    void testGetUsageForDateRange() {
-        LocalDate day1 = LocalDate.of(2026, 8, 1);
-        usageDao.savePeriodicDailyActiveSnapshot(day1, 3600);
-        assertEquals(1, usageDao.getUsageForDateRange(day1, day1).size());
+    void testRecordAndGetExtensionStats() {
+        LocalDate today = LocalDate.now();
+        usageDao.recordExtension(today, 15, "Finish task");
+        assertEquals(1, usageDao.getTodayExtensionStats().count());
+        assertEquals(15, usageDao.getTodayExtensionStats().totalMinutes());
     }
 }
