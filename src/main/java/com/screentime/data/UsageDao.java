@@ -79,4 +79,19 @@ public class UsageDao {
     }
 
     public java.util.List<AppUsage> getAppUsageForDate(java.time.LocalDate date) { return getTopAppsForDate(date, 1000); }
+
+    public java.util.List<DailyUsageSummary> getUsageForDateRange(java.time.LocalDate start, java.time.LocalDate end) {
+        String sql = "SELECT date, total_active_seconds, total_idle_seconds FROM daily_usage WHERE date >= ? AND date <= ? ORDER BY date ASC";
+        java.util.List<DailyUsageSummary> results = new java.util.ArrayList<>();
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, start.toString());
+            pstmt.setString(2, end.toString());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    results.add(new DailyUsageSummary(java.time.LocalDate.parse(rs.getString("date")), rs.getLong("total_active_seconds"), rs.getLong("total_idle_seconds")));
+                }
+            }
+        } catch (SQLException ignored) {}
+        return results;
+    }
 }
