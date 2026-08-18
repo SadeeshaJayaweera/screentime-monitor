@@ -52,4 +52,15 @@ public class UsageDao {
         } catch (SQLException ignored) {}
         return 0L;
     }
+
+    public DailyUsageSummary getDailySummary(java.time.LocalDate date) {
+        String sql = "SELECT total_active_seconds, total_idle_seconds FROM daily_usage WHERE date = ?";
+        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, date.toString());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return new DailyUsageSummary(date, rs.getLong("total_active_seconds"), rs.getLong("total_idle_seconds"));
+            }
+        } catch (SQLException ignored) {}
+        return new DailyUsageSummary(date, 0L, 0L);
+    }
 }
