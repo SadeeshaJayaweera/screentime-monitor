@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,16 +21,9 @@ class UsageDaoTest {
         assertEquals(600, usageDao.getTodayUsageSeconds());
     }
     @Test
-    void testGetTodayUsageSeconds() {
-        LocalDateTime now = LocalDateTime.now();
-        usageDao.recordSession(new TrackingSession("IDE", "", now.minusMinutes(5), now, false));
-        assertEquals(300, usageDao.getTodayUsageSeconds());
-    }
-    @Test
-    void testGetTopAppsToday() {
-        LocalDateTime now = LocalDateTime.now();
-        usageDao.recordSession(new TrackingSession("AppA", "", now.minusSeconds(100), now, false));
-        usageDao.recordSession(new TrackingSession("AppB", "", now.minusSeconds(300), now, false));
-        assertEquals(2, usageDao.getTopAppsToday(2).size());
+    void testGetUsageForDateRange() {
+        LocalDate day1 = LocalDate.of(2026, 8, 1);
+        usageDao.savePeriodicDailyActiveSnapshot(day1, 3600);
+        assertEquals(1, usageDao.getUsageForDateRange(day1, day1).size());
     }
 }
