@@ -10,3 +10,57 @@
     -fx-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
     -fx-text-fill: #f8fafc;
 }
+
+/* --- Left Navigation Sidebar --- */
+.sidebar {
+    -fx-background-color: linear-gradient(to bottom, #101726, #0d121f);
+    -fx-border-color: #1e293b;
+    -fx-border-width: 0 1px 0 0;
+    -fx-padding: 24px 14px 20px 14px;
+    -fx-spacing: 8px;
+}
+
+.app-brand-container {
+    -fx-padding: 0 0 20px 8px;
+    -fx-spacing: 4px;
+}
+
+.app-brand {
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #ffffff;
+    -fx-letter-spacing: -0.5px;
+}
+
+.app-brand-subtitle {
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #64748b;
+    -fx-letter-spacing: 0.2px;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-alignment: BASELINE_LEFT;
+    -fx-padding: 11px 14px;
+    -fx-background-radius: 9px;
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.nav-button:hover {
+    -fx-background-color: rgba(30, 41, 59, 0.7);
+    -fx-text-fill: #f1f5f9;
+}
+
+.nav-button-active {
+    -fx-background-color: linear-gradient(to right, rgba(56, 189, 248, 0.15), rgba(30, 41, 59, 0.6));
+    -fx-text-fill: #38bdf8;
+    -fx-font-weight: 700;
+    -fx-border-color: #38bdf8;
+    -fx-border-width: 0 0 0 3px;
+    -fx-border-radius: 2px;
+}
