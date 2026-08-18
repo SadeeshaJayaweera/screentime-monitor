@@ -8,14 +8,23 @@ public class UsageDao {
 
     public synchronized void recordSession(com.screentime.core.TrackingSession session) {
         if (session == null || session.getDurationSeconds() <= 0) return;
-        String sql = "INSERT INTO sessions(date, app_name, start_time, end_time, duration_seconds) VALUES(?, ?, ?, ?, ?)";
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, session.getDate().toString());
-            pstmt.setString(2, session.getAppName());
-            pstmt.setString(3, session.getStartTime().toString());
-            pstmt.setString(4, session.getEndTime().toString());
-            pstmt.setLong(5, session.getDurationSeconds());
-            pstmt.executeUpdate();
+        try (Connection conn = databaseManager.getConnection()) {
+            String sql = "INSERT INTO sessions(date, app_name, start_time, end_time, duration_seconds) VALUES(?, ?, ?, ?, ?)";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, session.getDate().toString());
+                pstmt.setString(2, session.getAppName());
+                pstmt.setString(3, session.getStartTime().toString());
+                pstmt.setString(4, session.getEndTime().toString());
+                pstmt.setLong(5, session.getDurationSeconds());
+                pstmt.executeUpdate();
+            }
+            String upsertDailySql = "INSERT INTO daily_usage (date, total_active_seconds, total_idle_seconds) VALUES (?, ?, ?) ON CONFLICT(date) DO UPDATE SET total_active_seconds = total_active_seconds + excluded.total_active_seconds, total_idle_seconds = total_idle_seconds + excluded.total_idle_seconds;";
+            try (PreparedStatement pDaily = conn.prepareStatement(upsertDailySql)) {
+                pDaily.setString(1, session.getDate().toString());
+                pDaily.setLong(2, session.isIdle() ? 0 : session.getDurationSeconds());
+                pDaily.setLong(3, session.isIdle() ? session.getDurationSeconds() : 0);
+                pDaily.executeUpdate();
+            }
         } catch (SQLException ignored) {}
     }
 }
