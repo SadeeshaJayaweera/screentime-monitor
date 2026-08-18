@@ -20,6 +20,7 @@
         <javafx.version>17.0.10</javafx.version>
         <sqlite.version>3.45.1.0</sqlite.version>
         <jnativehook.version>2.2.2</jnativehook.version>
+        <jna.version>5.14.0</jna.version>
     </properties>
 
     <dependencies>
@@ -45,6 +46,17 @@
             <groupId>com.github.kwhat</groupId>
             <artifactId>jnativehook</artifactId>
             <version>${jnativehook.version}</version>
+        </dependency>
+        <!-- Java Native Access (JNA) for Cross-Platform Window/Process Info -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>${jna.version}</version>
         </dependency>
     </dependencies>
 </project>
