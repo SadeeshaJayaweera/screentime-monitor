@@ -8,6 +8,12 @@ public class UsageDao {
 
     public synchronized void recordSession(com.screentime.core.TrackingSession session) {
         if (session == null || session.getDurationSeconds() <= 0) return;
+        if (!session.getStartTime().toLocalDate().equals(session.getEndTime().toLocalDate())) {
+            for (com.screentime.core.TrackingSession split : session.splitAtMidnight()) {
+                recordSession(split);
+            }
+            return;
+        }
         try (Connection conn = databaseManager.getConnection()) {
             String sql = "INSERT INTO sessions(date, app_name, start_time, end_time, duration_seconds) VALUES(?, ?, ?, ?, ?)";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
