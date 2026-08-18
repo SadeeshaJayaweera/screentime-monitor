@@ -1,8 +1,288 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.*?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.*?>
-<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.screentime.ui.MainViewController">
-    <left><VBox prefWidth="200"><Label text="ScreenTime"/></VBox></left>
-    <center><StackPane><VBox fx:id="todayView"/><VBox fx:id="historyView"/><VBox fx:id="aiView"><Label text="AI"/></VBox></StackPane></center>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.screentime.ui.MainViewController"
+            stylesheets="@styles.css"
+            prefWidth="960.0" prefHeight="680.0"
+            minWidth="840.0" minHeight="600.0">
+
+    <!-- LEFT SIDEBAR -->
+    <left>
+        <VBox styleClass="sidebar" prefWidth="210.0" spacing="8.0">
+            <!-- Brand -->
+            <VBox spacing="2.0">
+                <Label text="⏱️ ScreenTime" styleClass="app-brand"/>
+                <Label text="Health &amp; Focus Monitor" style="-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-padding: 0 0 12px 8px;"/>
+            </VBox>
+
+            <!-- Navigation Buttons -->
+            <Button fx:id="btnNavToday" text="📊   Today" onAction="#showTodayTab" styleClass="nav-button, nav-button-active" maxWidth="Infinity"/>
+            <Button fx:id="btnNavHistory" text="📈   History" onAction="#showHistoryTab" styleClass="nav-button" maxWidth="Infinity"/>
+            <Button fx:id="btnNavAi" text="✨   AI Insights" onAction="#showAiTab" styleClass="nav-button" maxWidth="Infinity"/>
+            <Button fx:id="btnNavSettings" text="⚙️   Settings" onAction="#showSettingsTab" styleClass="nav-button" maxWidth="Infinity"/>
+
+            <!-- Spacer -->
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <!-- Sidebar Status Widget -->
+            <VBox styleClass="card-sm" spacing="8.0">
+                <Label text="STATUS" styleClass="card-title"/>
+                <Label fx:id="sidebarStatusBadge" text="● TRACKING ACTIVE" styleClass="badge-active"/>
+                <Button text="+ Request Extension" onAction="#onRequestExtensionClicked" styleClass="btn-primary" maxWidth="Infinity" style="-fx-font-size: 11px; -fx-padding: 6 10;"/>
+            </VBox>
+        </VBox>
+    </left>
+
+    <!-- CENTER CONTENT STACK -->
+    <center>
+        <StackPane styleClass="content-area">
+
+            <!-- 1. TODAY VIEW -->
+            <VBox fx:id="todayView" spacing="16.0" visible="true">
+                <!-- Header -->
+                <HBox alignment="CENTER_LEFT" spacing="16.0">
+                    <VBox spacing="2.0">
+                        <Label text="Today's Overview" styleClass="view-header"/>
+                        <Label fx:id="todayDateLabel" text="Loading current date..." styleClass="view-subtitle"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="currentAppBadge" text="Active App: Loading..." styleClass="badge-active"/>
+                </HBox>
+
+                <!-- Dynamic Warning Banner (Shown when warning thresholds are triggered) -->
+                <Label fx:id="warningBanner" text="⚠️ Warning: 90% of daily limit reached." styleClass="banner-warning" visible="false" managed="false" maxWidth="Infinity"/>
+
+                <!-- Top Metrics Row with Circular Progress Ring -->
+                <HBox spacing="16.0">
+                    <!-- Metric Card 1: Circular Progress Ring & Today's Usage -->
+                    <VBox styleClass="card" spacing="10.0" prefWidth="280.0" alignment="CENTER">
+                        <Label text="TODAY'S PROGRESS" styleClass="card-title"/>
+                        <StackPane fx:id="progressRingContainer" alignment="CENTER" prefHeight="170.0"/>
+                        <HBox alignment="CENTER" spacing="12.0">
+                            <Label fx:id="progressPercentLabel" text="0% of daily limit" style="-fx-text-fill: #94a3b8; -fx-font-size: 12px; -fx-font-weight: bold;"/>
+                            <Label text="|" style="-fx-text-fill: #334155;"/>
+                            <Label fx:id="todayIdleTimeLabel" text="Idle: 0m" style="-fx-text-fill: #64748b; -fx-font-size: 12px;"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Metric Card 2: Limit, Remaining & Extensions Breakdown -->
+                    <VBox styleClass="card" spacing="14.0" HBox.hgrow="ALWAYS">
+                        <Label text="DAILY LIMIT &amp; REMAINING" styleClass="card-title"/>
+
+                        <HBox spacing="24.0" alignment="CENTER_LEFT">
+                            <VBox spacing="4.0">
+                                <Label text="Time Remaining" style="-fx-font-size: 12px; -fx-text-fill: #94a3b8;"/>
+                                <Label fx:id="todayRemainingTimeLabel" text="8h 00m" styleClass="stat-number"/>
+                            </VBox>
+                            <Separator orientation="VERTICAL" style="-fx-opacity: 0.2;"/>
+                            <VBox spacing="4.0">
+                                <Label text="Total Active Tracked" style="-fx-font-size: 12px; -fx-text-fill: #94a3b8;"/>
+                                <Label fx:id="todayActiveTimeLabel" text="0h 00m" styleClass="stat-number-accent"/>
+                            </VBox>
+                        </HBox>
+
+                        <ProgressBar fx:id="todayProgressBar" progress="0.0" maxWidth="Infinity" style="-fx-pref-height: 8px;"/>
+
+                        <HBox spacing="20.0" style="-fx-padding: 4px 0 0 0;">
+                            <VBox spacing="2.0">
+                                <Label text="Configured Limit" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
+                                <Label fx:id="todayLimitLabel" text="8h 00m" style="-fx-font-size: 13px; -fx-text-fill: #cbd5e1; -fx-font-weight: bold;"/>
+                            </VBox>
+                            <VBox spacing="2.0">
+                                <Label text="Extensions Today" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
+                                <Label fx:id="todayExtensionsLabel" text="None (+0m)" style="-fx-font-size: 13px; -fx-text-fill: #38bdf8; -fx-font-weight: bold;"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </HBox>
+
+                <!-- Card 3: Top Applications Used Today -->
+                <VBox styleClass="card" spacing="12.0" VBox.vgrow="ALWAYS">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="TOP APPLICATIONS TODAY" styleClass="card-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label text="Auto-refreshes live" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
+                    </HBox>
+                    <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent;" VBox.vgrow="ALWAYS">
+                        <VBox fx:id="topAppsContainer" spacing="10.0"/>
+                    </ScrollPane>
+                </VBox>
+
+                <!-- Bottom Quick Actions -->
+                <HBox spacing="12.0" alignment="CENTER_RIGHT">
+                    <Button fx:id="btnPauseTracking" text="⏸️ Pause Tracking" onAction="#onTogglePauseTracking" styleClass="btn-secondary"/>
+                    <Button text="⏳ Request Extension" onAction="#onRequestExtensionClicked" styleClass="btn-primary"/>
+                </HBox>
+            </VBox>
+
+            <!-- 2. HISTORY VIEW -->
+            <VBox fx:id="historyView" spacing="16.0" visible="false">
+                <HBox alignment="CENTER_LEFT" spacing="16.0">
+                    <VBox spacing="2.0">
+                        <Label text="Screen Time Trends" styleClass="view-header"/>
+                        <Label text="Historical breakdown and daily totals from local SQLite database" styleClass="view-subtitle"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <!-- Filter Range Buttons -->
+                    <HBox spacing="6.0">
+                        <Button fx:id="btnRange7" text="7 Days" onAction="#onRange7Selected" styleClass="btn-filter-active"/>
+                        <Button fx:id="btnRange14" text="14 Days" onAction="#onRange14Selected" styleClass="btn-filter-inactive"/>
+                        <Button fx:id="btnRange30" text="30 Days" onAction="#onRange30Selected" styleClass="btn-filter-inactive"/>
+                    </HBox>
+                </HBox>
+
+                <!-- History Chart -->
+                <VBox styleClass="card" spacing="8.0" VBox.vgrow="ALWAYS">
+                    <Label text="DAILY ACTIVE USAGE (HOURS)" styleClass="card-title"/>
+                    <BarChart fx:id="historyBarChart" legendVisible="false" animated="false" VBox.vgrow="ALWAYS" prefHeight="260.0">
+                        <xAxis>
+                            <CategoryAxis side="BOTTOM" fx:id="historyCategoryAxis"/>
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis side="LEFT" label="Hours" fx:id="historyNumberAxis"/>
+                        </yAxis>
+                    </BarChart>
+                </VBox>
+
+                <!-- History Table Summary -->
+                <VBox styleClass="card" spacing="8.0" prefHeight="180.0">
+                    <Label text="DAILY LOGS" styleClass="card-title"/>
+                    <TableView fx:id="historyTableView" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colDate" text="Date" prefWidth="140.0"/>
+                            <TableColumn fx:id="colActiveTime" text="Active Screen Time" prefWidth="180.0"/>
+                            <TableColumn fx:id="colIdleTime" text="Idle Time" prefWidth="140.0"/>
+                            <TableColumn fx:id="colTopApp" text="Top Application" prefWidth="220.0"/>
+                        </columns>
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                    </TableView>
+                </VBox>
+            </VBox>
+
+            <!-- 3. AI INSIGHTS VIEW -->
+            <VBox fx:id="aiView" spacing="16.0" visible="false">
+                <HBox alignment="CENTER_LEFT" spacing="16.0">
+                    <VBox spacing="2.0">
+                        <Label text="AI Health &amp; Wellness Advisor" styleClass="view-header"/>
+                        <Label text="Personalized ergonomic, posture, and break suggestions" styleClass="view-subtitle"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="aiStatusBadge" text="✨ AI Ready" styleClass="badge-active"/>
+                </HBox>
+
+                <!-- Assessment Card -->
+                <VBox styleClass="card" spacing="10.0">
+                    <Label text="TODAY'S HEALTH ASSESSMENT" styleClass="card-title"/>
+                    <Label fx:id="aiAssessmentText" text="Analyzing your screen time patterns..." wrapText="true" style="-fx-font-size: 14px; -fx-text-fill: #f1f5f9; -fx-line-spacing: 4px;"/>
+                </HBox>
+
+                <!-- Identified Concerns Card -->
+                <VBox styleClass="card" spacing="10.0">
+                    <Label text="IDENTIFIED HEALTH CONCERNS" styleClass="card-title"/>
+                    <HBox fx:id="aiConcernsContainer" spacing="10.0" alignment="CENTER_LEFT"/>
+                </VBox>
+
+                <!-- Actionable Recommendations Card -->
+                <VBox styleClass="card" spacing="10.0" VBox.vgrow="ALWAYS">
+                    <Label text="ACTIONABLE WELLNESS RECOMMENDATIONS" styleClass="card-title"/>
+                    <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent;" VBox.vgrow="ALWAYS">
+                        <VBox fx:id="aiSuggestionsContainer" spacing="10.0"/>
+                    </ScrollPane>
+                </VBox>
+
+                <!-- Actions -->
+                <HBox spacing="12.0" alignment="CENTER_RIGHT">
+                    <ProgressIndicator fx:id="aiLoadingIndicator" visible="false" prefWidth="20.0" prefHeight="20.0"/>
+                    <Button text="🔄 Refresh Insights" onAction="#onRefreshAiInsights" styleClass="btn-primary"/>
+                </HBox>
+            </VBox>
+
+            <!-- 4. SETTINGS VIEW -->
+            <VBox fx:id="settingsView" spacing="16.0" visible="false">
+                <VBox spacing="2.0">
+                    <Label text="Application Settings" styleClass="view-header"/>
+                    <Label text="Configure daily limits, notifications, warning thresholds, and AI features" styleClass="view-subtitle"/>
+                </VBox>
+
+                <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent;" VBox.vgrow="ALWAYS">
+                    <VBox spacing="16.0">
+                        <!-- Limits & Restrictions Card -->
+                        <VBox styleClass="card" spacing="14.0">
+                            <Label text="LIMITS &amp; WARNINGS" styleClass="card-title"/>
+
+                            <GridPane hgap="16.0" vgap="12.0">
+                                <columnConstraints>
+                                    <ColumnConstraints minWidth="200.0" prefWidth="240.0"/>
+                                    <ColumnConstraints hgrow="ALWAYS"/>
+                                </columnConstraints>
+
+                                <Label text="Daily Screen Time Limit (Minutes):" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                <TextField fx:id="settingDailyLimit" promptText="480 (8 hours)" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                                <Label text="Warning Thresholds (% of limit):" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                <TextField fx:id="settingWarningThresholds" promptText="50, 75, 90, 100" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                                <Label text="Idle Timeout Threshold (Seconds):" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                <TextField fx:id="settingIdleThreshold" promptText="60" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                                <Label text="Hard Limit Overlay Warning:" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                                <CheckBox fx:id="settingHardBlock" text="Show full-screen always-on-top warning stage when limit reached" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                                <Label text="Max Extensions Allowed Per Day:" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                                <TextField fx:id="settingMaxExtensions" promptText="3" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+                                <Label text="Max Extension Minutes Per Day:" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                                <TextField fx:id="settingMaxExtensionMinutes" promptText="120" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+                                <Label text="Launch on System Startup:" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                                <CheckBox fx:id="settingAutostart" text="Automatically start ScreenTime Monitor in background when logging in" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+                            </GridPane>
+                        </VBox>
+
+                        <!-- AI Configuration Card -->
+                        <VBox styleClass="card" spacing="14.0">
+                            <Label text="AI &amp; GEMINI INTEGRATION" styleClass="card-title"/>
+
+                            <GridPane hgap="16.0" vgap="12.0">
+                                <columnConstraints>
+                                    <ColumnConstraints minWidth="200.0" prefWidth="240.0"/>
+                                    <ColumnConstraints hgrow="ALWAYS"/>
+                                </columnConstraints>
+
+                                <Label text="Enable AI Health Suggestions:" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                <CheckBox fx:id="settingAiEnabled" text="Analyze daily screen time trends and suggest ergonomic breaks" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                                <Label text="Gemini API Key:" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                <HBox spacing="8.0" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                                    <PasswordField fx:id="settingApiKey" promptText="Enter your Gemini API key (optional)" HBox.hgrow="ALWAYS"/>
+                                    <Button fx:id="btnToggleApiKey" text="👁️" onAction="#onToggleApiKeyVisibility" styleClass="btn-secondary"/>
+                                </HBox>
+
+                                <Label text="Desktop Notifications:" style="-fx-text-fill: #cbd5e1; -fx-font-size: 13px;" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                <CheckBox fx:id="settingNotifications" text="Enable native desktop notifications for warnings and break tips" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                            </GridPane>
+                        </VBox>
+                    </VBox>
+                </ScrollPane>
+
+                <!-- Save Actions -->
+                <HBox spacing="16.0" alignment="CENTER_RIGHT">
+                    <Label fx:id="settingsSavedLabel" text="" style="-fx-text-fill: #4ade80; -fx-font-weight: bold; -fx-font-size: 13px;"/>
+                    <Button text="💾 Save Settings" onAction="#onSaveSettings" styleClass="btn-primary"/>
+                </HBox>
+            </VBox>
+
+        </StackPane>
+    </center>
+
 </BorderPane>
