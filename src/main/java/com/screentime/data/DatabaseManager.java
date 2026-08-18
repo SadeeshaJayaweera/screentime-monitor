@@ -18,6 +18,9 @@ public class DatabaseManager {
             stmt.execute("CREATE TABLE IF NOT EXISTS sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, app_name TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT NOT NULL, duration_seconds INTEGER NOT NULL);");
             stmt.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);");
             stmt.execute("CREATE TABLE IF NOT EXISTS limit_extensions (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, requested_minutes INTEGER NOT NULL, requested_at TEXT NOT NULL, reason TEXT);");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date);");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_app_usage_date ON app_usage(date);");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_limit_extensions_date ON limit_extensions(date);");
         } catch (SQLException ignored) {}
     }
 }
