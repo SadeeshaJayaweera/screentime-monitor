@@ -7,6 +7,10 @@ public class AppConfig {
     private List<Integer> warningThresholds = new ArrayList<>(List.of(50, 75, 90, 100));
     private int idleThresholdSeconds = 60;
     private int breakReminderIntervalMinutes = 60;
+    private boolean hardBlockEnabled = false;
+    private int maxExtensionsPerDay = 3;
+    private int maxExtensionMinutesPerDay = 120;
+    private int extensionReminderCadenceMinutes = 5;
 
     public AppConfig() {}
     public int getDailyLimitMinutes() { return dailyLimitMinutes; }
@@ -17,4 +21,12 @@ public class AppConfig {
     public void setIdleThresholdSeconds(int idleThresholdSeconds) { this.idleThresholdSeconds = idleThresholdSeconds; }
     public int getBreakReminderIntervalMinutes() { return breakReminderIntervalMinutes; }
     public void setBreakReminderIntervalMinutes(int breakReminderIntervalMinutes) { this.breakReminderIntervalMinutes = breakReminderIntervalMinutes; }
+    public boolean isHardBlockEnabled() { return hardBlockEnabled; }
+    public void setHardBlockEnabled(boolean hardBlockEnabled) { this.hardBlockEnabled = hardBlockEnabled; }
+    public int getMaxExtensionsPerDay() { return maxExtensionsPerDay; }
+    public void setMaxExtensionsPerDay(int maxExtensionsPerDay) { this.maxExtensionsPerDay = maxExtensionsPerDay; }
+    public int getMaxExtensionMinutesPerDay() { return maxExtensionMinutesPerDay; }
+    public void setMaxExtensionMinutesPerDay(int maxExtensionMinutesPerDay) { this.maxExtensionMinutesPerDay = maxExtensionMinutesPerDay; }
+    public int getExtensionReminderCadenceMinutes() { return extensionReminderCadenceMinutes; }
+    public void setExtensionReminderCadenceMinutes(int extensionReminderCadenceMinutes) { this.extensionReminderCadenceMinutes = extensionReminderCadenceMinutes; }
 }
